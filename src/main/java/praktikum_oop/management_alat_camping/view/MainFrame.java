@@ -8,6 +8,6 @@ package praktikum_oop.management_alat_camping.view;
  *
  * @author morxidia
  */
-public class ConsoleUI {
+public class MainFrame {
     
 }
