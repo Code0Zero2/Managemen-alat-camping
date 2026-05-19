@@ -2,13 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  */
 
-package com.mycompany.management_alat_camping;
+package praktikum_oop.management_alat_camping;
 
 /**
  *
  * @author morxidia
  */
-public class Management_alat_camping {
+public class Main {
 
     public static void main(String[] args) {
         System.out.println("Hello World!");
