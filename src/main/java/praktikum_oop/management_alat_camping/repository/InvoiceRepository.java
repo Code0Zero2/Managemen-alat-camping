@@ -32,7 +32,7 @@ public class InvoiceRepository {
             pstmt.setString(4, invoice.getPaymentStatus());
             pstmt.setDate(5, invoice.getRentDate());
             pstmt.setDate(6, invoice.getExpectedReturnDate());
-            pstmt.setString(7, invoice.getReturned());
+            pstmt.setBoolean(7, invoice.getReturned());
             pstmt.executeUpdate();
             
             try (ResultSet rs = pstmt.getGeneratedKeys()) {
@@ -57,7 +57,7 @@ public class InvoiceRepository {
                 }
                 pstmt.executeBatch();
             }
-            DatabaseConfig.commit();
+            conn.commit();
         }
         return invoiceId;
     }
@@ -82,7 +82,7 @@ public class InvoiceRepository {
                 inv.setPaymentStatus(rs.getString("payment_status"));
                 inv.setRentDate(rs.getDate("rent_date"));
                 inv.setExpectedReturnDate(rs.getDate("expected_return_date"));
-                inv.setReturned(rs.getString("returned"));
+                inv.setReturned(rs.getBoolean("returned"));
                 inv.setCustomerName(rs.getString("customer_name"));
                 inv.setWorkerName(rs.getString("worker_name"));
                 invoices.add(inv);
@@ -96,7 +96,7 @@ public class InvoiceRepository {
         String sql = "SELECT i.*, c.full_name as customer_name " +
                      "FROM invoices i " +
                      "LEFT JOIN customers c ON i.user_id = c.user_id " +
-                     "WHERE i.returned = 'FALSE' ORDER BY i.id DESC";
+                     "WHERE i.returned = FALSE ORDER BY i.id DESC";
         
         try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement();
@@ -108,7 +108,7 @@ public class InvoiceRepository {
                 inv.setTotalAmount(rs.getLong("total_amount"));
                 inv.setRentDate(rs.getDate("rent_date"));
                 inv.setExpectedReturnDate(rs.getDate("expected_return_date"));
-                inv.setReturned(rs.getString("returned"));
+                inv.setReturned(rs.getBoolean("returned"));
                 inv.setCustomerName(rs.getString("customer_name"));
                 invoices.add(inv);
             }
@@ -143,12 +143,27 @@ public class InvoiceRepository {
     }
     
     public void markAsReturned(Long invoiceId) throws SQLException {
-        String sql = "UPDATE invoices SET returned = 'TRUE' WHERE id = ?";
+        String sql = "UPDATE invoices SET returned = TRUE WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, invoiceId);
             pstmt.executeUpdate();
-            DatabaseConfig.commit();
+            conn.commit();
+        }
+    }
+    
+//    add update invoice
+    public void updatePaymentStatus(Long invoiceId, String status) throws SQLException {
+        String sql = "UPDATE invoices SET payment_status = ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, status);
+            pstmt.setLong(2, invoiceId);
+
+            pstmt.executeUpdate();
+            conn.commit();
         }
     }
 }

@@ -101,9 +101,9 @@ public class CustomerRepository {
                     customer.setUserId(userId);
                 }
             }
-            DatabaseConfig.commit();
+            conn.commit();
         } catch (SQLException e) {
-            DatabaseConfig.rollback();
+            conn.rollback();
             throw e;
         }
     }
@@ -120,7 +120,9 @@ public class CustomerRepository {
             pstmt.setBoolean(6, customer.getActive());
             pstmt.setLong(7, customer.getUserId());
             pstmt.executeUpdate();
-            DatabaseConfig.commit();
+            conn.commit();
+        } catch (SQLException e){
+            throw e;
         }
     }
 }

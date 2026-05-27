@@ -100,7 +100,24 @@ public class MainFrame extends JFrame {
         JTextField stockField = new JTextField(10);
         JTextField priceField = new JTextField(10);
         JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"GOOD", "DAMAGED", "MAINTENANCE"});
+        JComboBox<String> categoryCombo =
+            new JComboBox<>();
 
+        Map<String, Long> categoryMap =
+            new HashMap<>();
+        
+        try {
+            for (Category c : rentalService.getAllCategories()) {
+                categoryCombo.addItem(c.getName());
+                categoryMap.put( c.getName(), c.getId());
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                dialog,
+                "Failed load categories"
+            );
+        }
+        
         gbc.gridx = 0;
         gbc.gridy = 0;
         dialog.add(new JLabel("Name:"), gbc);
@@ -127,6 +144,12 @@ public class MainFrame extends JFrame {
 
         gbc.gridx = 0;
         gbc.gridy = 4;
+        dialog.add(new JLabel("Category:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(categoryCombo, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         dialog.add(new JLabel("Condition:"), gbc);
         gbc.gridx = 1;
         dialog.add(conditionCombo, gbc);
@@ -140,7 +163,12 @@ public class MainFrame extends JFrame {
                 eq.setAvailableStock(Integer.parseInt(stockField.getText()));
                 eq.setPricePerDay(Long.parseLong(priceField.getText()));
                 eq.setCondition((String) conditionCombo.getSelectedItem());
-                eq.setCategoryId(1L); // Default category
+//                eq.setCategoryId(1L); // Default category
+                String selectedCategory =
+                    (String) categoryCombo.getSelectedItem();
+                Long categoryId =
+                    categoryMap.get(selectedCategory);
+                eq.setCategoryId(categoryId);
 
                 rentalService.addEquipment(eq);
                 loadEquipmentData();
@@ -152,7 +180,7 @@ public class MainFrame extends JFrame {
         });
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
         dialog.add(saveBtn, gbc);
 
@@ -181,7 +209,34 @@ public class MainFrame extends JFrame {
         JTextField priceField = new JTextField(String.valueOf(equipmentTableModel.getValueAt(selectedRow, 5)), 10);
         JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"GOOD", "DAMAGED", "MAINTENANCE"});
         conditionCombo.setSelectedItem(equipmentTableModel.getValueAt(selectedRow, 6));
+        JComboBox<Category> categoryCombo =
+            new JComboBox<>();
 
+        Map<String, Long> categoryMap =
+            new HashMap<>();
+        
+        try {
+            for (Category c : rentalService.getAllCategories()) {
+                categoryCombo.addItem(c);
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(
+                dialog,
+                "Failed load categories"
+            );
+        }
+        
+        String currentCategory = (String) equipmentTableModel.getValueAt(
+            selectedRow,3
+        );
+        for (int i = 0; i < categoryCombo.getItemCount(); i++) {
+            Category c = categoryCombo.getItemAt(i);
+            if (c.getName().equals(currentCategory)) {
+                categoryCombo.setSelectedIndex(i);
+                break;
+            }
+        }
+        
         gbc.gridx = 0;
         gbc.gridy = 0;
         dialog.add(new JLabel("Name:"), gbc);
@@ -205,9 +260,16 @@ public class MainFrame extends JFrame {
         dialog.add(new JLabel("Price per Day:"), gbc);
         gbc.gridx = 1;
         dialog.add(priceField, gbc);
-
+        
         gbc.gridx = 0;
         gbc.gridy = 4;
+        dialog.add(new JLabel("Category:"), gbc);
+
+        gbc.gridx = 1;
+        dialog.add(categoryCombo, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy = 5;
         dialog.add(new JLabel("Condition:"), gbc);
         gbc.gridx = 1;
         dialog.add(conditionCombo, gbc);
@@ -222,7 +284,11 @@ public class MainFrame extends JFrame {
                 eq.setAvailableStock(Integer.parseInt(stockField.getText()));
                 eq.setPricePerDay(Long.parseLong(priceField.getText()));
                 eq.setCondition((String) conditionCombo.getSelectedItem());
-                eq.setCategoryId(1L);
+//                eq.setCategoryId(1L);
+                Category selectedCategory = (Category) categoryCombo.getSelectedItem();
+                if (selectedCategory != null) {
+                    eq.setCategoryId(selectedCategory.getId());
+                }
 
                 rentalService.updateEquipment(eq);
                 loadEquipmentData();
@@ -234,7 +300,7 @@ public class MainFrame extends JFrame {
         });
 
         gbc.gridx = 0;
-        gbc.gridy = 5;
+        gbc.gridy = 6;
         gbc.gridwidth = 2;
         dialog.add(saveBtn, gbc);
 
@@ -312,6 +378,8 @@ public class MainFrame extends JFrame {
         JButton addToCartBtn = new JButton("Add to Cart");
         JButton removeBtn = new JButton("Remove");
         JButton processBtn = new JButton("Process Rental");
+        JButton paidButton = new JButton("Mark Paid");
+        JButton cancelButton = new JButton("Cancel");
 
         rentalButtons.add(new JLabel("Qty:"));
         rentalButtons.add(quantityField);
@@ -321,6 +389,12 @@ public class MainFrame extends JFrame {
         rentalButtons.add(removeBtn);
         rentalButtons.add(processBtn);
         formPanel.add(rentalButtons, gbc);
+        
+        gbc.gridy = 6;
+        JPanel statusPanel = new JPanel();
+        statusPanel.add(paidButton);
+        statusPanel.add(cancelButton);
+        formPanel.add(statusPanel, gbc);
 
         Map<Integer, Object[]> cartMap = new HashMap<>();
 
@@ -433,7 +507,39 @@ public class MainFrame extends JFrame {
         };
         invoiceTable = new JTable(invoiceTableModel);
         panel.add(new JScrollPane(invoiceTable), BorderLayout.CENTER);
-
+        
+        paidButton.addActionListener(e -> {
+            int row = invoiceTable.getSelectedRow();
+            if (row >= 0) {
+                Long invoiceId = (Long) invoiceTableModel.getValueAt(row, 0);
+                try {
+                    rentalService.updatePaymentStatus(invoiceId,"PAID");
+                    loadInvoices();
+                    JOptionPane.showMessageDialog(this,"Status updated to PAID");
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this,"Error: " + ex.getMessage());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this,"Select invoice first");
+            }
+        });
+        
+        cancelButton.addActionListener(e -> {
+            int row = invoiceTable.getSelectedRow();
+            if (row >= 0) {
+                Long invoiceId = (Long) invoiceTableModel.getValueAt(row, 0);
+                try {
+                    rentalService.updatePaymentStatus(invoiceId,"CANCELLED");
+                    loadInvoices();
+                    JOptionPane.showMessageDialog(this,"Status updated to CANCELLED");
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this,"Error: " + ex.getMessage());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this,"Select invoice first");
+            }
+        });
+        
         return panel;
     }
 
@@ -588,6 +694,35 @@ public class MainFrame extends JFrame {
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+        }
+    }
+
+    private void loadInvoices() {
+        try {
+            invoiceTableModel.setRowCount(0);
+
+            List<Invoice> invoices
+                    = rentalService.getAllInvoices();
+
+            for (Invoice inv : invoices) {
+
+                invoiceTableModel.addRow(new Object[]{
+                    inv.getId(),
+                    inv.getCustomerName(),
+                    inv.getTotalAmount(),
+                    inv.getPaymentStatus(),
+                    inv.getReturned(),
+                    inv.getRentDate()
+                });
+            }
+
+        } catch (SQLException ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Failed load invoices: "
+                    + ex.getMessage()
+            );
         }
     }
 }

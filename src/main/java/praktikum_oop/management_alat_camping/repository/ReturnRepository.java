@@ -66,10 +66,23 @@ public class ReturnRepository {
             
             // Mark invoice as returned if all items are returned
             if (totalUnreturned == 0) {
-                invoiceRepo.markAsReturned(returnObj.getInvoiceId());
+//                invoiceRepo.markAsReturned(returnObj.getInvoiceId());
+                String updateInvoiceSql
+                        = "UPDATE invoices SET returned = TRUE WHERE id = ?";
+
+                try (PreparedStatement pstmt
+                        = conn.prepareStatement(updateInvoiceSql)) {
+
+                    pstmt.setLong(
+                            1,
+                            returnObj.getInvoiceId()
+                    );
+
+                    pstmt.executeUpdate();
+                }
             }
             
-            DatabaseConfig.commit();
+            conn.commit();
         }
         return returnId;
     }

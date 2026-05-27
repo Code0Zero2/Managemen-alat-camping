@@ -21,7 +21,7 @@ public class Invoice {
     private String paymentStatus;
     private Date rentDate;
     private Date expectedReturnDate;
-    private String returned;
+    private Boolean returned;
     private List<InvoiceDetail> details;
     private String customerName;
     private String workerName;
@@ -29,7 +29,7 @@ public class Invoice {
     public Invoice() {
         this.details = new ArrayList<>();
         this.paymentStatus = "PENDING";
-        this.returned = "FALSE";
+        this.returned = false;
     }
     
     public Long getId() { return id; }
@@ -46,8 +46,8 @@ public class Invoice {
     public void setRentDate(Date rentDate) { this.rentDate = rentDate; }
     public Date getExpectedReturnDate() { return expectedReturnDate; }
     public void setExpectedReturnDate(Date expectedReturnDate) { this.expectedReturnDate = expectedReturnDate; }
-    public String getReturned() { return returned; }
-    public void setReturned(String returned) { this.returned = returned; }
+    public Boolean getReturned() { return returned; }
+    public void setReturned(Boolean returned) { this.returned = returned; }
     public List<InvoiceDetail> getDetails() { return details; }
     public void setDetails(List<InvoiceDetail> details) { this.details = details; }
     public String getCustomerName() { return customerName; }

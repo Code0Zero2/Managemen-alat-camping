@@ -114,7 +114,7 @@ CREATE TABLE returns_detail (
 CREATE TABLE penalties (
     id INT PRIMARY KEY AUTO_INCREMENT,
     returns_detail_id INT,
-    detail VARCHAR(255),
+    name VARCHAR(255),
     fine INT,
     FOREIGN KEY (returns_detail_id) REFERENCES returns_detail(id) ON DELETE CASCADE
 );

@@ -14,10 +14,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 public class DatabaseConfig {
-    private static Connection connection = null;
+//    private static Connection connection = null;
     private static final String URL = "jdbc:mysql://localhost:3306/camping_rental?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true";
     private static final String USERNAME = "root";
-    private static final String PASSWORD = "admin"; // Change to your MySQL password
+    private static final String PASSWORD = ""; // Change to your MySQL password
     
     static {
         loadMySQLDriver();
@@ -49,43 +49,56 @@ public class DatabaseConfig {
     }
     
     public static Connection getConnection() throws SQLException {
-        if (connection == null || connection.isClosed()) {
-            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
-            connection.setAutoCommit(false);
-        }
+        Connection connection =
+            DriverManager.getConnection(
+                URL,
+                USERNAME,
+                PASSWORD
+            );
+
+        connection.setAutoCommit(false);
+
         return connection;
     }
     
-    public static void closeConnection() {
-        if (connection != null) {
-            try {
-                connection.close();
-                connection = null;
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-    
-    public static void beginTransaction() throws SQLException {
-        getConnection().setAutoCommit(false);
-    }
-    
-    public static void commit() throws SQLException {
-        if (connection != null && !connection.getAutoCommit()) {
-            connection.commit();
-            connection.setAutoCommit(true);
-        }
-    }
-    
-    public static void rollback() {
-        try {
-            if (connection != null && !connection.getAutoCommit()) {
-                connection.rollback();
-                connection.setAutoCommit(true);
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
+//    public static Connection getConnection() throws SQLException {
+//        if (connection == null || connection.isClosed()) {
+//            connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
+//            connection.setAutoCommit(false);
+//        }
+//        return connection;
+//    }
+//    
+//    public static void closeConnection() {
+//        if (connection != null) {
+//            try {
+//                connection.close();
+//                connection = null;
+//            } catch (SQLException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//    }
+//    
+//    public static void beginTransaction() throws SQLException {
+//        getConnection().setAutoCommit(false);
+//    }
+//    
+//    public static void commit() throws SQLException {
+//        if (connection != null && !connection.getAutoCommit()) {
+//            connection.commit();
+//            connection.setAutoCommit(true);
+//        }
+//    }
+//    
+//    public static void rollback() {
+//        try {
+//            if (connection != null && !connection.getAutoCommit()) {
+//                connection.rollback();
+//                connection.setAutoCommit(true);
+//            }
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+//        }
+//    }
 }

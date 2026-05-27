@@ -46,7 +46,7 @@ public class EquipmentRepository {
         List<Equipment> list = new ArrayList<>();
         String sql = "SELECT e.*, c.name as category_name FROM equipments e " +
                      "LEFT JOIN categories c ON e.category_id = c.id " +
-                     "WHERE e.available_stock > 0 AND e.condition = 'GOOD'";
+                     "WHERE e.available_stock > 0 AND TRIM(e.`condition`) = 'GOOD'";
         
         try (Connection conn = DatabaseConfig.getConnection();
              Statement stmt = conn.createStatement();
@@ -67,7 +67,7 @@ public class EquipmentRepository {
     }
     
     public void save(Equipment equipment) throws SQLException {
-        String sql = "INSERT INTO equipments (name, brand, available_stock, price_per_day, condition, category_id) " +
+        String sql = "INSERT INTO equipments (name, brand, available_stock, price_per_day, `condition`, category_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -82,13 +82,13 @@ public class EquipmentRepository {
             try (ResultSet rs = pstmt.getGeneratedKeys()) {
                 if (rs.next()) equipment.setId(rs.getLong(1));
             }
-            DatabaseConfig.commit();
+            conn.commit();
         }
     }
     
     public void update(Equipment equipment) throws SQLException {
         String sql = "UPDATE equipments SET name = ?, brand = ?, available_stock = ?, " +
-                     "price_per_day = ?, condition = ?, category_id = ? WHERE id = ?";
+                     "price_per_day = ?, `condition` = ?, category_id = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, equipment.getName());
@@ -99,7 +99,7 @@ public class EquipmentRepository {
             pstmt.setObject(6, equipment.getCategoryId());
             pstmt.setLong(7, equipment.getId());
             pstmt.executeUpdate();
-            DatabaseConfig.commit();
+            conn.commit();
         }
     }
     
@@ -109,7 +109,7 @@ public class EquipmentRepository {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, id);
             pstmt.executeUpdate();
-            DatabaseConfig.commit();
+            conn.commit();
         }
     }
     

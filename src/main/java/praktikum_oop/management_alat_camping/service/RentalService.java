@@ -18,11 +18,13 @@ public class RentalService {
     private CustomerRepository customerRepo;
     private EquipmentRepository equipmentRepo;
     private InvoiceRepository invoiceRepo;
+    private CategoryRepository categoryRepo;
     
     public RentalService() {
         this.customerRepo = new CustomerRepository();
         this.equipmentRepo = new EquipmentRepository();
         this.invoiceRepo = new InvoiceRepository();
+        this.categoryRepo = new CategoryRepository();
     }
     
     public List<Customer> getAllCustomers() throws SQLException {
@@ -63,5 +65,13 @@ public class RentalService {
     
     public List<InvoiceDetail> getInvoiceDetails(Long invoiceId) throws SQLException {
         return invoiceRepo.findDetailsByInvoiceId(invoiceId);
+    }
+    
+    public List<Category> getAllCategories() throws SQLException {
+        return categoryRepo.findAll();
+    }
+    
+    public void updatePaymentStatus(Long invoiceId, String status) throws SQLException {
+        invoiceRepo.updatePaymentStatus(invoiceId, status);
     }
 }
