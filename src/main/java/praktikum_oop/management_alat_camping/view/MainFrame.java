@@ -477,9 +477,7 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
-    // ==========================================
     // RETURNS PANEL
-    // ==========================================
     private JPanel createReturnPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
