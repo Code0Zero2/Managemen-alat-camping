@@ -19,12 +19,14 @@ public class RentalService {
     private EquipmentRepository equipmentRepo;
     private InvoiceRepository invoiceRepo;
     private CategoryRepository categoryRepo;
+    private WorkerRepository workerRepo; 
     
     public RentalService() {
         this.customerRepo = new CustomerRepository();
         this.equipmentRepo = new EquipmentRepository();
         this.invoiceRepo = new InvoiceRepository();
         this.categoryRepo = new CategoryRepository();
+        this.workerRepo = new WorkerRepository();
     }
     
     public List<Customer> getAllCustomers() throws SQLException {
@@ -73,5 +75,17 @@ public class RentalService {
     
     public void updatePaymentStatus(Long invoiceId, String status) throws SQLException {
         invoiceRepo.updatePaymentStatus(invoiceId, status);
+    }
+    
+    public void addCustomer(Customer customer) throws SQLException {
+        customerRepo.save(customer);
+    }
+    
+    public void addWorker(Worker worker) throws SQLException {
+        workerRepo.createWorker(worker);
+    }
+    
+    public List<Worker> getAllWorkers() throws SQLException {
+        return workerRepo.getAllWorkers();
     }
 }

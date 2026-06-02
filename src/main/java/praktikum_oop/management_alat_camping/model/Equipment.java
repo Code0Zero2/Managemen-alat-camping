@@ -34,22 +34,58 @@ public class Equipment {
         this.condition = "GOOD";
     }
     
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getBrand() { return brand; }
-    public void setBrand(String brand) { this.brand = brand; }
-    public Integer getAvailableStock() { return availableStock; }
-    public void setAvailableStock(Integer availableStock) { this.availableStock = availableStock; }
-    public Long getPricePerDay() { return pricePerDay; }
-    public void setPricePerDay(Long pricePerDay) { this.pricePerDay = pricePerDay; }
-    public String getCondition() { return condition; }
-    public void setCondition(String condition) { this.condition = condition; }
-    public Timestamp getAddedAt() { return addedAt; }
-    public void setAddedAt(Timestamp addedAt) { this.addedAt = addedAt; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public String getCategoryName() { return categoryName; }
-    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
+    public Long getId() { 
+        return id; 
+    }
+    public void setId(Long id) { 
+        this.id = id; 
+    }
+    public String getName() { 
+        return name; 
+    }
+    public void setName(String name) { 
+        this.name = name; 
+    }
+    public String getBrand() { 
+        return brand; 
+    }
+    public void setBrand(String brand) { 
+        this.brand = brand; 
+    }
+    public Integer getAvailableStock() { 
+        return availableStock; 
+    }
+    public void setAvailableStock(Integer availableStock) { 
+        this.availableStock = availableStock; 
+    }
+    public Long getPricePerDay() { 
+        return pricePerDay; 
+    }
+    public void setPricePerDay(Long pricePerDay) { 
+        this.pricePerDay = pricePerDay; 
+    }
+    public String getCondition() { 
+        return condition; 
+    }
+    public void setCondition(String condition) { 
+        this.condition = condition; 
+    }
+    public Timestamp getAddedAt() { 
+        return addedAt; 
+    }
+    public void setAddedAt(Timestamp addedAt) { 
+        this.addedAt = addedAt; 
+    }
+    public Long getCategoryId() { 
+        return categoryId; 
+    }
+    public void setCategoryId(Long categoryId) { 
+        this.categoryId = categoryId; 
+    }
+    public String getCategoryName() { 
+        return categoryName; 
+    }
+    public void setCategoryName(String categoryName) { 
+        this.categoryName = categoryName; 
+    }
 }
