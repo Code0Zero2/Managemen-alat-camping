@@ -4,10 +4,6 @@
 
 package praktikum_oop.management_alat_camping;
 
-import javax.swing.UIManager;
-import javax.swing.SwingUtilities;
-import praktikum_oop.management_alat_camping.view.MainFrame;
-
 /**
  *
  * @author morxidia
@@ -16,7 +12,7 @@ import praktikum_oop.management_alat_camping.view.MainFrame;
 // Main.java
 import javax.swing.UIManager;
 import javax.swing.SwingUtilities;
-import praktikum_oop.management_alat_camping.view.MainFrame;
+import praktikum_oop.management_alat_camping.view.LoginFrame;
 
 public class Main {
     public static void main(String[] args) {
@@ -27,7 +23,7 @@ public class Main {
         }
 
         SwingUtilities.invokeLater(() -> {
-            new MainFrame();
+            new LoginFrame().setVisible(true);
         });
     }
 }

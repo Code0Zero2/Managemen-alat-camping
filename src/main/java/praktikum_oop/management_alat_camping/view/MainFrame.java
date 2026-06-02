@@ -18,7 +18,6 @@ import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.*;
-
 import java.util.List;
 
 public class MainFrame extends JFrame {
@@ -26,23 +25,38 @@ public class MainFrame extends JFrame {
     private RentalService rentalService;
     private ReturnService returnService;
     private JTabbedPane tabbedPane;
+    
     private JTable equipmentTable;
     private JTable invoiceTable;
+    private JTable returnHistoryTable; 
+    private JTable customerTable; // NEW: Table for Customers
+    private JTable workerTable; // NEW: Table for Workers
+    
     private DefaultTableModel equipmentTableModel;
     private DefaultTableModel invoiceTableModel;
-    private Long currentWorkerId = 2L; // Demo worker ID
+    private DefaultTableModel returnHistoryTableModel; 
+    private DefaultTableModel customerTableModel; // NEW: Model for Customers
+    private DefaultTableModel workerTableModel; // NEW: Model for Workers
+    
+    private Long currentWorkerId; 
+    private String currentWorkerName;
 
-    public MainFrame() {
+    public MainFrame(Worker loggedInWorker) {
+        this.currentWorkerId = loggedInWorker.getId();
+        this.currentWorkerName = loggedInWorker.getName();
         rentalService = new RentalService();
         returnService = new ReturnService();
         initUI();
         loadEquipmentData();
         loadInvoiceData();
+        loadReturnHistoryData(); 
+        loadCustomerData(); // NEW: Load initial customer data
+        loadWorkerData(); // NEW: Load initial worker data
         setVisible(true);
     }
 
     private void initUI() {
-        setTitle("Camping Equipment Rental Management System");
+        setTitle("Camping Equipment Rental - Logged in as: " + currentWorkerName);
         setSize(1300, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -51,10 +65,15 @@ public class MainFrame extends JFrame {
         tabbedPane.addTab("Equipment Management", createEquipmentPanel());
         tabbedPane.addTab("Rental Management", createRentalPanel());
         tabbedPane.addTab("Process Returns", createReturnPanel());
+        tabbedPane.addTab("Customer Management", createCustomerPanel()); // NEW TAB
+        tabbedPane.addTab("Admin/Worker Management", createWorkerPanel()); // NEW TAB
 
         add(tabbedPane);
     }
 
+    // ==========================================
+    // EQUIPMENT PANEL
+    // ==========================================
     private JPanel createEquipmentPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -100,11 +119,8 @@ public class MainFrame extends JFrame {
         JTextField stockField = new JTextField(10);
         JTextField priceField = new JTextField(10);
         JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"GOOD", "DAMAGED", "MAINTENANCE"});
-        JComboBox<String> categoryCombo =
-            new JComboBox<>();
-
-        Map<String, Long> categoryMap =
-            new HashMap<>();
+        JComboBox<String> categoryCombo = new JComboBox<>();
+        Map<String, Long> categoryMap = new HashMap<>();
         
         try {
             for (Category c : rentalService.getAllCategories()) {
@@ -112,47 +128,26 @@ public class MainFrame extends JFrame {
                 categoryMap.put( c.getName(), c.getId());
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(
-                dialog,
-                "Failed load categories"
-            );
+            JOptionPane.showMessageDialog(dialog, "Failed load categories");
         }
         
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        dialog.add(new JLabel("Name:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(nameField, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; dialog.add(new JLabel("Name:"), gbc);
+        gbc.gridx = 1; dialog.add(nameField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        dialog.add(new JLabel("Brand:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(brandField, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; dialog.add(new JLabel("Brand:"), gbc);
+        gbc.gridx = 1; dialog.add(brandField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        dialog.add(new JLabel("Stock:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(stockField, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; dialog.add(new JLabel("Stock:"), gbc);
+        gbc.gridx = 1; dialog.add(stockField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        dialog.add(new JLabel("Price per Day:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(priceField, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; dialog.add(new JLabel("Price per Day:"), gbc);
+        gbc.gridx = 1; dialog.add(priceField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        dialog.add(new JLabel("Category:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(categoryCombo, gbc);
+        gbc.gridx = 0; gbc.gridy = 4; dialog.add(new JLabel("Category:"), gbc);
+        gbc.gridx = 1; dialog.add(categoryCombo, gbc);
         
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        dialog.add(new JLabel("Condition:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(conditionCombo, gbc);
+        gbc.gridx = 0; gbc.gridy = 5; dialog.add(new JLabel("Condition:"), gbc);
+        gbc.gridx = 1; dialog.add(conditionCombo, gbc);
 
         JButton saveBtn = new JButton("Save");
         saveBtn.addActionListener(e -> {
@@ -163,11 +158,8 @@ public class MainFrame extends JFrame {
                 eq.setAvailableStock(Integer.parseInt(stockField.getText()));
                 eq.setPricePerDay(Long.parseLong(priceField.getText()));
                 eq.setCondition((String) conditionCombo.getSelectedItem());
-//                eq.setCategoryId(1L); // Default category
-                String selectedCategory =
-                    (String) categoryCombo.getSelectedItem();
-                Long categoryId =
-                    categoryMap.get(selectedCategory);
+                String selectedCategory = (String) categoryCombo.getSelectedItem();
+                Long categoryId = categoryMap.get(selectedCategory);
                 eq.setCategoryId(categoryId);
 
                 rentalService.addEquipment(eq);
@@ -179,14 +171,9 @@ public class MainFrame extends JFrame {
             }
         });
 
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2;
-        dialog.add(saveBtn, gbc);
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2; dialog.add(saveBtn, gbc);
 
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
+        dialog.pack(); dialog.setLocationRelativeTo(this); dialog.setVisible(true);
     }
 
     private void showEditEquipmentDialog() {
@@ -209,26 +196,19 @@ public class MainFrame extends JFrame {
         JTextField priceField = new JTextField(String.valueOf(equipmentTableModel.getValueAt(selectedRow, 5)), 10);
         JComboBox<String> conditionCombo = new JComboBox<>(new String[]{"GOOD", "DAMAGED", "MAINTENANCE"});
         conditionCombo.setSelectedItem(equipmentTableModel.getValueAt(selectedRow, 6));
-        JComboBox<Category> categoryCombo =
-            new JComboBox<>();
+        JComboBox<Category> categoryCombo = new JComboBox<>();
 
-        Map<String, Long> categoryMap =
-            new HashMap<>();
+        Map<String, Long> categoryMap = new HashMap<>();
         
         try {
             for (Category c : rentalService.getAllCategories()) {
                 categoryCombo.addItem(c);
             }
         } catch (SQLException ex) {
-            JOptionPane.showMessageDialog(
-                dialog,
-                "Failed load categories"
-            );
+            JOptionPane.showMessageDialog(dialog, "Failed load categories");
         }
         
-        String currentCategory = (String) equipmentTableModel.getValueAt(
-            selectedRow,3
-        );
+        String currentCategory = (String) equipmentTableModel.getValueAt(selectedRow,3);
         for (int i = 0; i < categoryCombo.getItemCount(); i++) {
             Category c = categoryCombo.getItemAt(i);
             if (c.getName().equals(currentCategory)) {
@@ -237,42 +217,23 @@ public class MainFrame extends JFrame {
             }
         }
         
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        dialog.add(new JLabel("Name:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(nameField, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; dialog.add(new JLabel("Name:"), gbc);
+        gbc.gridx = 1; dialog.add(nameField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        dialog.add(new JLabel("Brand:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(brandField, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; dialog.add(new JLabel("Brand:"), gbc);
+        gbc.gridx = 1; dialog.add(brandField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        dialog.add(new JLabel("Stock:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(stockField, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; dialog.add(new JLabel("Stock:"), gbc);
+        gbc.gridx = 1; dialog.add(stockField, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        dialog.add(new JLabel("Price per Day:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(priceField, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; dialog.add(new JLabel("Price per Day:"), gbc);
+        gbc.gridx = 1; dialog.add(priceField, gbc);
         
-        gbc.gridx = 0;
-        gbc.gridy = 4;
-        dialog.add(new JLabel("Category:"), gbc);
-
-        gbc.gridx = 1;
-        dialog.add(categoryCombo, gbc);
+        gbc.gridx = 0; gbc.gridy = 4; dialog.add(new JLabel("Category:"), gbc);
+        gbc.gridx = 1; dialog.add(categoryCombo, gbc);
         
-        gbc.gridx = 0;
-        gbc.gridy = 5;
-        dialog.add(new JLabel("Condition:"), gbc);
-        gbc.gridx = 1;
-        dialog.add(conditionCombo, gbc);
+        gbc.gridx = 0; gbc.gridy = 5; dialog.add(new JLabel("Condition:"), gbc);
+        gbc.gridx = 1; dialog.add(conditionCombo, gbc);
 
         JButton saveBtn = new JButton("Save");
         saveBtn.addActionListener(e -> {
@@ -284,7 +245,6 @@ public class MainFrame extends JFrame {
                 eq.setAvailableStock(Integer.parseInt(stockField.getText()));
                 eq.setPricePerDay(Long.parseLong(priceField.getText()));
                 eq.setCondition((String) conditionCombo.getSelectedItem());
-//                eq.setCategoryId(1L);
                 Category selectedCategory = (Category) categoryCombo.getSelectedItem();
                 if (selectedCategory != null) {
                     eq.setCategoryId(selectedCategory.getId());
@@ -299,14 +259,9 @@ public class MainFrame extends JFrame {
             }
         });
 
-        gbc.gridx = 0;
-        gbc.gridy = 6;
-        gbc.gridwidth = 2;
-        dialog.add(saveBtn, gbc);
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2; dialog.add(saveBtn, gbc);
 
-        dialog.pack();
-        dialog.setLocationRelativeTo(this);
-        dialog.setVisible(true);
+        dialog.pack(); dialog.setLocationRelativeTo(this); dialog.setVisible(true);
     }
 
     private void deleteEquipment() {
@@ -329,6 +284,9 @@ public class MainFrame extends JFrame {
         }
     }
 
+    // ==========================================
+    // RENTAL PANEL
+    // ==========================================
     private JPanel createRentalPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
@@ -337,19 +295,11 @@ public class MainFrame extends JFrame {
         gbc.insets = new Insets(5, 5, 5, 5);
 
         // Customer selection
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        formPanel.add(new JLabel("Customer:"), gbc);
-        gbc.gridx = 1;
-        JComboBox<String> customerCombo = new JComboBox<>();
-        loadCustomers(customerCombo);
-        formPanel.add(customerCombo, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; formPanel.add(new JLabel("Customer:"), gbc);
+        gbc.gridx = 1; JComboBox<String> customerCombo = new JComboBox<>(); loadCustomers(customerCombo); formPanel.add(customerCombo, gbc);
 
         // Available equipment table
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        formPanel.add(new JLabel("Available Equipment:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2; formPanel.add(new JLabel("Available Equipment:"), gbc);
 
         gbc.gridy = 2;
         String[] eqColumns = {"ID", "Name", "Brand", "Available", "Price/Day"};
@@ -360,8 +310,7 @@ public class MainFrame extends JFrame {
         formPanel.add(eqScroll, gbc);
 
         // Cart
-        gbc.gridy = 3;
-        formPanel.add(new JLabel("Rental Items:"), gbc);
+        gbc.gridy = 3; formPanel.add(new JLabel("Rental Items:"), gbc);
 
         gbc.gridy = 4;
         DefaultTableModel cartModel = new DefaultTableModel(new String[]{"Equipment", "Quantity", "Days", "Amount"}, 0);
@@ -381,38 +330,28 @@ public class MainFrame extends JFrame {
         JButton paidButton = new JButton("Mark Paid");
         JButton cancelButton = new JButton("Cancel");
 
-        rentalButtons.add(new JLabel("Qty:"));
-        rentalButtons.add(quantityField);
-        rentalButtons.add(new JLabel("Days:"));
-        rentalButtons.add(daysField);
-        rentalButtons.add(addToCartBtn);
-        rentalButtons.add(removeBtn);
-        rentalButtons.add(processBtn);
+        rentalButtons.add(new JLabel("Qty:")); rentalButtons.add(quantityField);
+        rentalButtons.add(new JLabel("Days:")); rentalButtons.add(daysField);
+        rentalButtons.add(addToCartBtn); rentalButtons.add(removeBtn); rentalButtons.add(processBtn);
         formPanel.add(rentalButtons, gbc);
         
         gbc.gridy = 6;
         JPanel statusPanel = new JPanel();
-        statusPanel.add(paidButton);
-        statusPanel.add(cancelButton);
+        statusPanel.add(paidButton); statusPanel.add(cancelButton);
         formPanel.add(statusPanel, gbc);
 
         Map<Integer, Object[]> cartMap = new HashMap<>();
 
-        // Load available equipment
         refreshAvailableEquipment(availModel);
 
         addToCartBtn.addActionListener(e -> {
             int selectedRow = availTable.getSelectedRow();
-            if (selectedRow == -1) {
-                return;
-            }
+            if (selectedRow == -1) return;
 
             try {
                 int quantity = Integer.parseInt(quantityField.getText());
                 int days = Integer.parseInt(daysField.getText());
-                if (quantity <= 0 || days <= 0) {
-                    throw new NumberFormatException();
-                }
+                if (quantity <= 0 || days <= 0) throw new NumberFormatException();
 
                 Long equipmentId = (Long) availModel.getValueAt(selectedRow, 0);
                 String name = (String) availModel.getValueAt(selectedRow, 1);
@@ -429,8 +368,7 @@ public class MainFrame extends JFrame {
                 cartMap.put(cartModel.getRowCount() - 1, new Object[]{equipmentId, name, quantity, days, amount});
                 availModel.setValueAt(available - quantity, selectedRow, 3);
 
-                quantityField.setText("");
-                daysField.setText("");
+                quantityField.setText(""); daysField.setText("");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(panel, "Enter valid numbers!");
             }
@@ -485,8 +423,7 @@ public class MainFrame extends JFrame {
                 Long invoiceId = rentalService.createRental(invoice);
                 JOptionPane.showMessageDialog(panel, "Rental created! Invoice ID: " + invoiceId);
 
-                cartModel.setRowCount(0);
-                cartMap.clear();
+                cartModel.setRowCount(0); cartMap.clear();
                 refreshAvailableEquipment(availModel);
                 loadInvoiceData();
 
@@ -500,10 +437,7 @@ public class MainFrame extends JFrame {
         // Invoice history table
         String[] invColumns = {"ID", "Customer", "Total", "Status", "Returned", "Rent Date"};
         invoiceTableModel = new DefaultTableModel(invColumns, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         invoiceTable = new JTable(invoiceTableModel);
         panel.add(new JScrollPane(invoiceTable), BorderLayout.CENTER);
@@ -543,30 +477,64 @@ public class MainFrame extends JFrame {
         return panel;
     }
 
+    // ==========================================
+    // RETURNS PANEL
+    // ==========================================
     private JPanel createReturnPanel() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
-        JPanel topPanel = new JPanel();
+        // --- Top section: Process New Return ---
+        JPanel processPanel = new JPanel(new BorderLayout());
+        processPanel.setBorder(BorderFactory.createTitledBorder("Process New Return"));
+
+        JPanel controlPanel = new JPanel();
         JLabel invoiceLabel = new JLabel("Select Invoice:");
         JComboBox<String> invoiceCombo = new JComboBox<>();
         JButton loadBtn = new JButton("Load Details");
         JButton processBtn = new JButton("Process Return");
-        topPanel.add(invoiceLabel);
-        topPanel.add(invoiceCombo);
-        topPanel.add(loadBtn);
-        topPanel.add(processBtn);
-        panel.add(topPanel, BorderLayout.NORTH);
+        controlPanel.add(invoiceLabel);
+        controlPanel.add(invoiceCombo);
+        controlPanel.add(loadBtn);
+        controlPanel.add(processBtn);
+        processPanel.add(controlPanel, BorderLayout.NORTH);
 
-        DefaultTableModel returnModel = new DefaultTableModel(new String[]{"Equipment", "Rented", "Returned", "Lost", "Damaged"}, 0);
+        DefaultTableModel returnModel = new DefaultTableModel(new String[]{"Equipment", "Rented", "Returned", "Lost", "Damaged"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                // Column 0 is "Equipment", Column 1 is "Rented". 
+                // We lock those by returning false.
+                if (column == 0 || column == 1) {
+                    return false;
+                }
+                // Allow editing for "Returned", "Lost", and "Damaged"
+                return true;
+            }
+        };
         JTable returnTable = new JTable(returnModel);
-        panel.add(new JScrollPane(returnTable), BorderLayout.CENTER);
+        JScrollPane processScroll = new JScrollPane(returnTable);
+        processScroll.setPreferredSize(new Dimension(800, 150));
+        processPanel.add(processScroll, BorderLayout.CENTER);
 
+        panel.add(processPanel, BorderLayout.NORTH);
+
+        // --- Bottom section: Return History ---
+        JPanel historyPanel = new JPanel(new BorderLayout());
+        historyPanel.setBorder(BorderFactory.createTitledBorder("Return History"));
+
+        String[] historyCols = {"Return ID", "Date", "Worker Name", "Invoice ID"};
+        returnHistoryTableModel = new DefaultTableModel(historyCols, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        returnHistoryTable = new JTable(returnHistoryTableModel);
+        historyPanel.add(new JScrollPane(returnHistoryTable), BorderLayout.CENTER);
+        
+        panel.add(historyPanel, BorderLayout.CENTER);
+
+        // --- Action Listeners ---
         refreshInvoiceCombo(invoiceCombo);
 
         loadBtn.addActionListener(e -> {
-            if (invoiceCombo.getSelectedIndex() == -1) {
-                return;
-            }
+            if (invoiceCombo.getSelectedIndex() == -1) return;
 
             Long invoiceId = Long.parseLong(invoiceCombo.getSelectedItem().toString().split(" - ")[0]);
             try {
@@ -584,10 +552,12 @@ public class MainFrame extends JFrame {
         });
 
         processBtn.addActionListener(e -> {
+            if (returnTable.isEditing()) {
+                returnTable.getCellEditor().stopCellEditing();
+            }   
             if (invoiceCombo.getSelectedIndex() == -1 || returnModel.getRowCount() == 0) {
                 return;
             }
-
             Long invoiceId = Long.parseLong(invoiceCombo.getSelectedItem().toString().split(" - ")[0]);
             Return returnObj = new Return();
             returnObj.setInvoiceId(invoiceId);
@@ -596,10 +566,10 @@ public class MainFrame extends JFrame {
             try {
                 List<InvoiceDetail> originalDetails = returnService.getInvoiceDetails(invoiceId);
                 for (int i = 0; i < originalDetails.size(); i++) {
-                    int returned = (int) returnModel.getValueAt(i, 2);
-                    int lost = (int) returnModel.getValueAt(i, 3);
-                    int damaged = (int) returnModel.getValueAt(i, 4);
-                    int rented = (int) returnModel.getValueAt(i, 1);
+                    int returned = Integer.parseInt(returnModel.getValueAt(i, 2).toString());
+                    int lost = Integer.parseInt(returnModel.getValueAt(i, 3).toString());
+                    int damaged = Integer.parseInt(returnModel.getValueAt(i, 4).toString());
+                    int rented = Integer.parseInt(returnModel.getValueAt(i, 1).toString());
 
                     if (returned + lost + damaged != rented) {
                         JOptionPane.showMessageDialog(panel, "Sum must equal rented quantity for " + returnModel.getValueAt(i, 0));
@@ -618,16 +588,182 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(panel, "Return processed!");
                 refreshInvoiceCombo(invoiceCombo);
                 loadInvoiceData();
+                loadReturnHistoryData(); 
                 returnModel.setRowCount(0);
 
             } catch (SQLException ex) {
                 JOptionPane.showMessageDialog(panel, "Error: " + ex.getMessage());
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(panel, "Please enter valid numbers in the grid.");
             }
         });
 
         return panel;
     }
 
+    // ==========================================
+    // CUSTOMER MANAGEMENT PANEL (NEW)
+    // ==========================================
+    private JPanel createCustomerPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        String[] columns = {"User ID", "Username", "Full Name", "Email", "Phone"};
+        customerTableModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        customerTable = new JTable(customerTableModel);
+        panel.add(new JScrollPane(customerTable), BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        JButton addBtn = new JButton("Add Customer");
+        JButton refreshBtn = new JButton("Refresh");
+
+        addBtn.addActionListener(e -> showAddCustomerDialog());
+        refreshBtn.addActionListener(e -> loadCustomerData());
+
+        buttonPanel.add(addBtn);
+        buttonPanel.add(refreshBtn);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private void showAddCustomerDialog() {
+        JDialog dialog = new JDialog(this, "Add New Customer", true);
+        dialog.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        JTextField usernameField = new JTextField(15);
+        JPasswordField passwordField = new JPasswordField(15);
+        JTextField fullNameField = new JTextField(20);
+        JTextField emailField = new JTextField(20);
+        JTextField phoneField = new JTextField(15);
+
+        gbc.gridx = 0; gbc.gridy = 0; dialog.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1; dialog.add(usernameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; dialog.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1; dialog.add(passwordField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; dialog.add(new JLabel("Full Name:"), gbc);
+        gbc.gridx = 1; dialog.add(fullNameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; dialog.add(new JLabel("Email:"), gbc);
+        gbc.gridx = 1; dialog.add(emailField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 4; dialog.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1; dialog.add(phoneField, gbc);
+
+        JButton saveBtn = new JButton("Save Customer");
+        saveBtn.addActionListener(e -> {
+            try {
+                Customer cust = new Customer();
+                cust.setUsername(usernameField.getText());
+                cust.setPassword(new String(passwordField.getPassword()));
+                cust.setFullName(fullNameField.getText());
+                cust.setEmail(emailField.getText());
+                cust.setPhone(phoneField.getText());
+
+                // Note: Ensure your RentalService has an addCustomer method
+                rentalService.addCustomer(cust); 
+                
+                loadCustomerData();
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Customer added successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+            }
+        });
+
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2; dialog.add(saveBtn, gbc);
+        dialog.pack(); dialog.setLocationRelativeTo(this); dialog.setVisible(true);
+    }
+
+    // ==========================================
+    // WORKER/ADMIN MANAGEMENT PANEL (NEW)
+    // ==========================================
+    private JPanel createWorkerPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+
+        String[] columns = {"User ID", "Username", "Name", "Shift", "Phone", "Active"};
+        workerTableModel = new DefaultTableModel(columns, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        workerTable = new JTable(workerTableModel);
+        panel.add(new JScrollPane(workerTable), BorderLayout.CENTER);
+
+        JPanel buttonPanel = new JPanel();
+        JButton addBtn = new JButton("Add Admin/Worker");
+        JButton refreshBtn = new JButton("Refresh");
+
+        addBtn.addActionListener(e -> showAddWorkerDialog());
+        refreshBtn.addActionListener(e -> loadWorkerData()); 
+
+        buttonPanel.add(addBtn);
+        buttonPanel.add(refreshBtn);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private void showAddWorkerDialog() {
+        JDialog dialog = new JDialog(this, "Add New Worker", true);
+        dialog.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        JTextField usernameField = new JTextField(15);
+        JPasswordField passwordField = new JPasswordField(15);
+        JTextField nameField = new JTextField(20);
+        JTextField phoneField = new JTextField(15);
+        JComboBox<String> shiftCombo = new JComboBox<>(new String[]{"Morning", "Evening", "Night"});
+
+        gbc.gridx = 0; gbc.gridy = 0; dialog.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1; dialog.add(usernameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1; dialog.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1; dialog.add(passwordField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2; dialog.add(new JLabel("Real Name:"), gbc);
+        gbc.gridx = 1; dialog.add(nameField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 3; dialog.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1; dialog.add(phoneField, gbc);
+        
+        gbc.gridx = 0; gbc.gridy = 4; dialog.add(new JLabel("Shift:"), gbc);
+        gbc.gridx = 1; dialog.add(shiftCombo, gbc);
+
+        JButton saveBtn = new JButton("Save Worker");
+        saveBtn.addActionListener(e -> {
+            try {
+                Worker worker = new Worker();
+                worker.setUsername(usernameField.getText());
+                worker.setPassword(new String(passwordField.getPassword()));
+                worker.setName(nameField.getText());
+                worker.setPhone(phoneField.getText());
+                worker.setShift((String) shiftCombo.getSelectedItem());
+                worker.setActive(true);
+                worker.setDivisionId(1L); 
+
+                // Note: Ensure your RentalService has an addWorker method
+                rentalService.addWorker(worker); 
+                
+                loadWorkerData();
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Worker added successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+            }
+        });
+
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2; dialog.add(saveBtn, gbc);
+        dialog.pack(); dialog.setLocationRelativeTo(this); dialog.setVisible(true);
+    }
+
+    // ==========================================
+    // DATA LOADING METHODS
+    // ==========================================
     private void loadEquipmentData() {
         equipmentTableModel.setRowCount(0);
         try {
@@ -653,6 +789,45 @@ public class MainFrame extends JFrame {
             }
         } catch (SQLException ex) {
             JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+        }
+    }
+
+    private void loadReturnHistoryData() {
+        returnHistoryTableModel.setRowCount(0);
+        try {
+            for (Return r : returnService.getAllReturns()) {
+                returnHistoryTableModel.addRow(new Object[]{
+                    r.getId(), r.getReturnDate(), r.getWorkerName(), r.getInvoiceId()
+                });
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Failed to load Return History: " + ex.getMessage());
+        }
+    }
+    
+    private void loadCustomerData() {
+        customerTableModel.setRowCount(0);
+        try {
+            for (Customer c : rentalService.getAllCustomers()) {
+                customerTableModel.addRow(new Object[]{
+                    c.getUserId(), c.getUsername(), c.getFullName(), c.getEmail(), c.getPhone()
+                });
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error loading customers: " + ex.getMessage());
+        }
+    }
+    
+    private void loadWorkerData() {
+        workerTableModel.setRowCount(0);
+        try {
+            for (Worker w : rentalService.getAllWorkers()) {
+                workerTableModel.addRow(new Object[]{
+                    w.getId(), w.getUsername(), w.getName(), w.getShift(), w.getPhone(), w.getActive()
+                });
+            }
+        } catch (SQLException ex) {
+            JOptionPane.showMessageDialog(this, "Error loading workers: " + ex.getMessage());
         }
     }
 
@@ -700,29 +875,15 @@ public class MainFrame extends JFrame {
     private void loadInvoices() {
         try {
             invoiceTableModel.setRowCount(0);
-
-            List<Invoice> invoices
-                    = rentalService.getAllInvoices();
-
+            List<Invoice> invoices = rentalService.getAllInvoices();
             for (Invoice inv : invoices) {
-
                 invoiceTableModel.addRow(new Object[]{
-                    inv.getId(),
-                    inv.getCustomerName(),
-                    inv.getTotalAmount(),
-                    inv.getPaymentStatus(),
-                    inv.getReturned(),
-                    inv.getRentDate()
+                    inv.getId(), inv.getCustomerName(), inv.getTotalAmount(),
+                    inv.getPaymentStatus(), inv.getReturned(), inv.getRentDate()
                 });
             }
-
         } catch (SQLException ex) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Failed load invoices: "
-                    + ex.getMessage()
-            );
+            JOptionPane.showMessageDialog(this, "Failed load invoices: " + ex.getMessage());
         }
     }
 }
