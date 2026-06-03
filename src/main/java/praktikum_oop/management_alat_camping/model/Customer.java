@@ -13,37 +13,45 @@ public class Customer extends User {
     private String fullName;
     private String email;
     private String phone;
-    
+
     public Customer() {
-        super(); 
+        super();
     }
-    
-    public Long getUserId() { 
+
+    public Long getUserId() {
         return getId();
     }
-    public void setUserId(Long userId) { 
+
+    public void setUserId(Long userId) {
         setId(userId);
     }
-    
-    public String getFullName() { 
+
+    public String getFullName() {
         return fullName;
     }
-    public void setFullName(String fullName) { 
+
+    public void setFullName(String fullName) {
         this.fullName = fullName;
     }
-    
-    public String getEmail() { 
+
+    public String getEmail() {
         return email;
     }
-    public void setEmail(String email) { 
+
+    public void setEmail(String email) {
         this.email = email;
     }
-    
-    public String getPhone() { 
+
+    public String getPhone() {
         return phone;
     }
-    public void setPhone(String phone) { 
+
+    public void setPhone(String phone) {
         this.phone = phone;
     }
-    
+
+    @Override
+    public String getRole() {
+        return "Customer";
+    }
 }

@@ -9,7 +9,7 @@ package praktikum_oop.management_alat_camping.model;
  * @author morxidia
  */
 import java.sql.Timestamp;
-public class User {
+public abstract class User {
     private Long id;
     private String username;
     private String password;
@@ -53,4 +53,6 @@ public class User {
     public void setCreatedAt(Timestamp createdAt) { 
         this.createdAt = createdAt;
     }
+
+    public abstract String getRole();
 }
