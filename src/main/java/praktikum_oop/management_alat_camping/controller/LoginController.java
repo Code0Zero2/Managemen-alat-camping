@@ -10,6 +10,7 @@ package praktikum_oop.management_alat_camping.controller;
  */
 
 import praktikum_oop.management_alat_camping.model.Worker;
+import praktikum_oop.management_alat_camping.model.User; // Import kelas induk untuk Abstraksi & Polimorfisme
 import praktikum_oop.management_alat_camping.service.AuthService;
 import praktikum_oop.management_alat_camping.view.LoginFrame;
 import praktikum_oop.management_alat_camping.view.MainFrame;
@@ -49,8 +50,12 @@ public class LoginController {
                 return;
             }
 
-            view.dispose();
+            // view.dispose();
+            // new MainFrame(worker).setVisible(true);
+            // --------------------------------------------------
 
+            showWelcomeAlert(worker);
+            view.dispose();
             new MainFrame(worker).setVisible(true);
 
         } catch (SQLException e) {
@@ -58,5 +63,14 @@ public class LoginController {
             view.setFormEnabled(true);
             e.printStackTrace();
         }
+    }
+
+    private void showWelcomeAlert(User user) {
+        javax.swing.JOptionPane.showMessageDialog(
+                view,
+                "Selamat datang kembali, " + user.getUsername() + "!\n" +
+                        "Anda masuk sebagai: " + user.getRole(),
+                "Login Berhasil",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE);
     }
 }
