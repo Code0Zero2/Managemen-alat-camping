@@ -28,10 +28,84 @@ public class WorkerPanel extends JPanel {
         
         JButton addBtn = new JButton("Add Worker");
         addBtn.addActionListener(e -> {
-            // Re-use your showAddWorkerDialog() logic here!
-             JOptionPane.showMessageDialog(this, "Add logic goes here"); 
+//             JOptionPane.showMessageDialog(this, "Add logic goes here"); 
+             showAddWorkerDialog();
         });
         add(addBtn, BorderLayout.SOUTH);
+    }
+    
+    private void showAddWorkerDialog() {
+        Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
+        JDialog dialog = new JDialog(parentFrame, "Add New Worker", true);
+        dialog.setLayout(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        JTextField usernameField = new JTextField(15);
+        JPasswordField passwordField = new JPasswordField(15);
+        JTextField nameField = new JTextField(20);
+        JTextField phoneField = new JTextField(15);
+        JComboBox<String> shiftCombo = new JComboBox<>(new String[] { "Morning", "Evening", "Night" });
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        dialog.add(new JLabel("Username:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(usernameField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        dialog.add(new JLabel("Password:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(passwordField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        dialog.add(new JLabel("Real Name:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(nameField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        dialog.add(new JLabel("Phone:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(phoneField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 4;
+        dialog.add(new JLabel("Shift:"), gbc);
+        gbc.gridx = 1;
+        dialog.add(shiftCombo, gbc);
+
+        JButton saveBtn = new JButton("Save Worker");
+        saveBtn.addActionListener(e -> {
+            try {
+                Worker worker = new Worker();
+                worker.setUsername(usernameField.getText());
+                worker.setPassword(new String(passwordField.getPassword()));
+                worker.setName(nameField.getText());
+                worker.setPhone(phoneField.getText());
+                worker.setShift((String) shiftCombo.getSelectedItem());
+                worker.setActive(true);
+                worker.setDivisionId(1L);
+
+                service.addWorker(worker);
+
+                refreshData();
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Worker added successfully!");
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(dialog, "Error: " + ex.getMessage());
+            }
+        });
+
+        gbc.gridx = 0;
+        gbc.gridy = 5;
+        gbc.gridwidth = 2;
+        dialog.add(saveBtn, gbc);
+        dialog.pack();
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
     
     public void refreshData() {

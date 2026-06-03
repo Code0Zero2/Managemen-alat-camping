@@ -121,7 +121,7 @@ public class WorkerRepository {
                 psWorker.setString(3, worker.getPhone());
                 psWorker.setString(4, worker.getShift());
                 psWorker.setLong(5, worker.getDivisionId());
-                psWorker.setString(6, worker.getActive() ? "true" : "false"); // Convert boolean back to string
+                psWorker.setBoolean(6, worker.getActive()); // Convert boolean back to string
                 psWorker.executeUpdate();
             }
 
@@ -154,7 +154,7 @@ public class WorkerRepository {
             ps.setString(2, worker.getPhone());
             ps.setString(3, worker.getShift());
             ps.setLong(4, worker.getDivisionId());
-            ps.setString(5, worker.getActive() ? "true" : "false");
+            ps.setBoolean(5, worker.getActive());
             ps.setLong(6, worker.getId());
 
             return ps.executeUpdate() > 0;
