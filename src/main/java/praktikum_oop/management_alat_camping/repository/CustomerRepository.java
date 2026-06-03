@@ -17,15 +17,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CustomerRepository {
-    
+
     public List<Customer> findAll() throws SQLException {
         List<Customer> customers = new ArrayList<>();
-        String sql =    "SELECT u.id, u.username, c.full_name, c.email, c.phone " +
-                        "FROM users u JOIN customers c ON u.id = c.user_id ";
-        
+        String sql = "SELECT u.id, u.username, c.full_name, c.email, c.phone " +
+                "FROM users u JOIN customers c ON u.id = c.user_id ";
+
         try (Connection conn = DatabaseConfig.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
                 Customer c = new Customer();
                 c.setUserId(rs.getLong("id"));
@@ -38,13 +38,13 @@ public class CustomerRepository {
         }
         return customers;
     }
-    
+
     public Customer findById(Long userId) throws SQLException {
         String sql = "SELECT u.id, u.username, c.full_name, c.email, c.phone " +
-                     "FROM users u JOIN customers c ON u.id = c.user_id WHERE u.id = ?";
-        
+                "FROM users u JOIN customers c ON u.id = c.user_id WHERE u.id = ?";
+
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setLong(1, userId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
@@ -60,7 +60,7 @@ public class CustomerRepository {
         }
         return null;
     }
-    
+
     public void save(Customer customer) throws SQLException {
         Connection conn = DatabaseConfig.getConnection();
         try {
@@ -72,14 +72,15 @@ public class CustomerRepository {
                 pstmt.setString(2, customer.getPassword());
                 pstmt.executeUpdate();
                 try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) userId = rs.getLong(1);
+                    if (rs.next())
+                        userId = rs.getLong(1);
                 }
             }
-            
+
             // Insert into customers table
             if (userId != null) {
                 String customerSql = "INSERT INTO customers (user_id, full_name, email, phone) " +
-                                     "VALUES (?, ?, ?, ?)";
+                        "VALUES (?, ?, ?, ?)";
                 try (PreparedStatement pstmt = conn.prepareStatement(customerSql)) {
                     pstmt.setLong(1, userId);
                     pstmt.setString(2, customer.getFullName());
@@ -95,19 +96,43 @@ public class CustomerRepository {
             throw e;
         }
     }
-    
+
     public void update(Customer customer) throws SQLException {
-        String sql = "UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE user_id = ?";
+        String userSql = "UPDATE users SET username = ? WHERE id = ?";
+        String customerSql = "UPDATE customers SET full_name = ?, email = ?, phone = ? WHERE user_id = ?";
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                // 1. Update users table
+                try (PreparedStatement pstmt = conn.prepareStatement(userSql)) {
+                    pstmt.setString(1, customer.getUsername());
+                    pstmt.setLong(2, customer.getUserId());
+                    pstmt.executeUpdate();
+                }
+                
+                // 2. Update customers table
+                try (PreparedStatement pstmt = conn.prepareStatement(customerSql)) {
+                    pstmt.setString(1, customer.getFullName());
+                    pstmt.setString(2, customer.getEmail());
+                    pstmt.setString(3, customer.getPhone());
+                    pstmt.setLong(4, customer.getUserId());
+                    pstmt.executeUpdate();
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    public void delete(Long userId) throws SQLException {
+        String sql = "DELETE FROM users WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setString(1, customer.getFullName());
-            pstmt.setString(2, customer.getEmail());
-            pstmt.setString(3, customer.getPhone());
-            pstmt.setLong(4, customer.getUserId());
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setLong(1, userId);
             pstmt.executeUpdate();
             conn.commit();
-        } catch (SQLException e){
-            throw e;
         }
     }
 }
