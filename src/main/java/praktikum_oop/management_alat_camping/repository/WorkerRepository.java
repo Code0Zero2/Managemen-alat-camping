@@ -18,22 +18,22 @@ import java.util.List;
 public class WorkerRepository {
     private Worker mapResultSetToWorker(ResultSet rs) throws SQLException {
         Worker worker = new Worker();
-        
+
         // From users table
         worker.setId(rs.getLong("id"));
         worker.setUsername(rs.getString("username"));
         worker.setPassword(rs.getString("password"));
-        
+
         // From workers table
         worker.setName(rs.getString("name"));
         worker.setPhone(rs.getString("phone"));
         worker.setShift(rs.getString("shift"));
         worker.setDivisionId(rs.getLong("division_id"));
         worker.setActive(rs.getBoolean("active"));
-        
+
         // From divisions table (Left Join)
         worker.setDivisionName(rs.getString("division_name"));
-        
+
         return worker;
     }
 
@@ -42,15 +42,17 @@ public class WorkerRepository {
      */
     public List<Worker> getAllWorkers() throws SQLException {
         List<Worker> workers = new ArrayList<>();
-        String sql = "SELECT u.id, u.username, u.password, w.name, w.phone, w.shift, w.division_id, w.active, d.name AS division_name " +
-                     "FROM workers w " +
-                     "JOIN users u ON w.user_id = u.id " +
-                     "LEFT JOIN divisions d ON w.division_id = d.id";
+        String sql = "SELECT u.id, u.username, u.password, w.name, w.phone, w.shift, w.division_id, w.active, d.name AS division_name "
+                +
+                "FROM workers w " +
+                "JOIN users u ON w.user_id = u.id " +
+                "LEFT JOIN divisions d ON w.division_id = d.id";
 
-        // Replace with your actual connection getter: Connection conn = DatabaseConnection.getConnection();
+        // Replace with your actual connection getter: Connection conn =
+        // DatabaseConnection.getConnection();
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()) {
 
             while (rs.next()) {
                 workers.add(mapResultSetToWorker(rs));
@@ -63,15 +65,16 @@ public class WorkerRepository {
      * Finds a specific worker by their username (Useful for Login).
      */
     public Worker findByUsername(String username) throws SQLException {
-        String sql = "SELECT u.id, u.username, u.password, w.name, w.phone, w.shift, w.division_id, w.active, d.name AS division_name " +
-                     "FROM workers w " +
-                     "JOIN users u ON w.user_id = u.id " +
-                     "LEFT JOIN divisions d ON w.division_id = d.id " +
-                     "WHERE u.username = ?";
+        String sql = "SELECT u.id, u.username, u.password, w.name, w.phone, w.shift, w.division_id, w.active, d.name AS division_name "
+                +
+                "FROM workers w " +
+                "JOIN users u ON w.user_id = u.id " +
+                "LEFT JOIN divisions d ON w.division_id = d.id " +
+                "WHERE u.username = ?";
 
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -83,7 +86,8 @@ public class WorkerRepository {
     }
 
     /**
-     * Creates a new worker. Requires a transaction because it inserts into two tables.
+     * Creates a new worker. Requires a transaction because it inserts into two
+     * tables.
      */
     public boolean createWorker(Worker worker) throws SQLException {
         Connection conn = null;
@@ -117,7 +121,7 @@ public class WorkerRepository {
                 psWorker.setString(3, worker.getPhone());
                 psWorker.setString(4, worker.getShift());
                 psWorker.setLong(5, worker.getDivisionId());
-                psWorker.setString(6, worker.getActive() ? "true" : "false"); // Convert boolean back to string
+                psWorker.setBoolean(6, worker.getActive()); // Convert boolean back to string
                 psWorker.executeUpdate();
             }
 
@@ -142,17 +146,17 @@ public class WorkerRepository {
      */
     public boolean updateWorker(Worker worker) throws SQLException {
         String sql = "UPDATE workers SET name = ?, phone = ?, shift = ?, division_id = ?, active = ? WHERE user_id = ?";
-        
+
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
             ps.setString(1, worker.getName());
             ps.setString(2, worker.getPhone());
             ps.setString(3, worker.getShift());
             ps.setLong(4, worker.getDivisionId());
-            ps.setString(5, worker.getActive() ? "true" : "false");
+            ps.setBoolean(5, worker.getActive());
             ps.setLong(6, worker.getId());
-            
+
             return ps.executeUpdate() > 0;
         }
     }

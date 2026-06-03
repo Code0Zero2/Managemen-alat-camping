@@ -17,11 +17,11 @@ public class DatabaseConfig {
     private static final String URL = "jdbc:mysql://localhost:3306/camping_rental?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private static final String USERNAME = "root";
     private static final String PASSWORD = "admin"; // Change to your MySQL password
-    
+
     static {
         loadMySQLDriver();
     }
-    
+
     private static void loadMySQLDriver() {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -35,7 +35,8 @@ public class DatabaseConfig {
                     File[] jars = libDir.listFiles((dir, name) -> name.contains("mysql-connector"));
                     if (jars != null && jars.length > 0) {
                         URL url = jars[0].toURI().toURL();
-                        URLClassLoader classLoader = new URLClassLoader(new URL[]{url}, Thread.currentThread().getContextClassLoader());
+                        URLClassLoader classLoader = new URLClassLoader(new URL[] { url },
+                                Thread.currentThread().getContextClassLoader());
                         Class.forName("com.mysql.cj.jdbc.Driver", true, classLoader);
                         Thread.currentThread().setContextClassLoader(classLoader);
                         System.out.println("Driver loaded from: " + jars[0].getName());
@@ -46,11 +47,11 @@ public class DatabaseConfig {
             }
         }
     }
-    
+
     public static Connection getConnection() throws SQLException {
-        Connection connection = DriverManager.getConnection(URL,USERNAME,PASSWORD);
+        Connection connection = DriverManager.getConnection(URL, USERNAME, PASSWORD);
         connection.setAutoCommit(false);
         return connection;
     }
-    
+
 }
