@@ -21,10 +21,7 @@ public class AuthService {
     }
 
     public Worker loginAsWorker(String username, String password) throws SQLException {
-        // 1. Fetch the worker from the DB using the repository
         Worker worker = workerRepo.findByUsername(username);
-        
-        // 2. Validate password (in a real app, use password hashing here)
         if (worker != null && worker.getPassword().equals(password)) {
             return worker;
         }
