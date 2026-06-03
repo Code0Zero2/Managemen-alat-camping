@@ -88,4 +88,12 @@ public class RentalService {
     public List<Worker> getAllWorkers() throws SQLException {
         return workerRepo.getAllWorkers();
     }
+
+    public void updateCustomer(Customer customer) throws SQLException {
+        customerRepo.update(customer);
+    }
+
+    public void deleteCustomer(Long userId) throws SQLException {
+        customerRepo.delete(userId);
+    }
 }
