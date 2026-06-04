@@ -115,11 +115,13 @@ public class EquipmentRepository {
     
     public void updateStock(Long equipmentId, int quantityChange) throws SQLException {
         String sql = "UPDATE equipments SET available_stock = available_stock + ? WHERE id = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setInt(1, quantityChange);
             pstmt.setLong(2, equipmentId);
             pstmt.executeUpdate();
+
+            conn.commit(); // YOU MUST ADD THIS LINE!
         }
     }
+
 }
