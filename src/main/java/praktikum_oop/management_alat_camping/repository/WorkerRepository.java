@@ -160,4 +160,39 @@ public class WorkerRepository {
             return ps.executeUpdate() > 0;
         }
     }
+    
+    public void delete(Long userId) throws SQLException {
+        // Delete from child table (workers) first, then parent table (users)
+        String sqlWorker = "DELETE FROM workers WHERE user_id = ?";
+        String sqlUser = "DELETE FROM users WHERE id = ?";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // 1. Delete from workers table
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlWorker)) {
+                pstmt.setLong(1, userId);
+                pstmt.executeUpdate();
+            }
+
+            // 2. Delete from users table
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlUser)) {
+                pstmt.setLong(1, userId);
+                pstmt.executeUpdate();
+            }
+
+            conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+            }
+        }
+    }
 }

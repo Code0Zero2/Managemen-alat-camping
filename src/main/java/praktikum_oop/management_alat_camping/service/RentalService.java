@@ -96,4 +96,8 @@ public class RentalService {
     public void deleteCustomer(Long userId) throws SQLException {
         customerRepo.delete(userId);
     }
+    
+    public void deleteWorker(Long id) throws SQLException {
+        workerRepo.delete(id);
+    }
 }

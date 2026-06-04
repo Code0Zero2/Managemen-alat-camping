@@ -68,8 +68,8 @@ CREATE TABLE invoices (
     rent_date DATE,
     expected_return_date DATE,
     returned BOOLEAN DEFAULT FALSE,
-    FOREIGN KEY (user_id) REFERENCES customers(user_id),
-    FOREIGN KEY (worker_id) REFERENCES workers(user_id)
+    FOREIGN KEY (user_id) REFERENCES customers(user_id) ON DELETE SET NULL,
+    FOREIGN KEY (worker_id) REFERENCES workers(user_id) ON DELETE SET NULL
 );
 
 -- 8. Invoice details table

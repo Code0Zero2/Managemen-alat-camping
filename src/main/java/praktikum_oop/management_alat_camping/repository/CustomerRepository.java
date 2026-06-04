@@ -127,12 +127,39 @@ public class CustomerRepository {
     }
 
     public void delete(Long userId) throws SQLException {
-        String sql = "DELETE FROM users WHERE id = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-                PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            pstmt.setLong(1, userId);
-            pstmt.executeUpdate();
+        // Because of database relationships, deleting the User will automatically 
+        // cascade and delete the Customer record if you set up 'ON DELETE CASCADE' in SQL.
+        // If not, we explicitly delete from customers first, then users.
+        String sqlCustomer = "DELETE FROM customers WHERE user_id = ?";
+        String sqlUser = "DELETE FROM users WHERE id = ?";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // Start transaction
+
+            // 1. Delete from child table (customers)
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlCustomer)) {
+                pstmt.setLong(1, userId);
+                pstmt.executeUpdate();
+            }
+
+            // 2. Delete from parent table (users)
+            try (PreparedStatement pstmt = conn.prepareStatement(sqlUser)) {
+                pstmt.setLong(1, userId);
+                pstmt.executeUpdate();
+            }
+
             conn.commit();
+        } catch (SQLException e) {
+            if (conn != null) {
+                conn.rollback();
+            }
+            throw e;
+        } finally {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+            }
         }
     }
 }

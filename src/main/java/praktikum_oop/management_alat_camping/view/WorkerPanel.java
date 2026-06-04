@@ -17,23 +17,38 @@ import java.awt.*;
 import java.sql.SQLException;
 
 public class WorkerPanel extends JPanel {
+
     private RentalService service;
     private DefaultTableModel model;
-    
+    private JTable table; // Promoted to class variable so we can get the selected row
+
     public WorkerPanel(RentalService service) {
         this.service = service;
         setLayout(new BorderLayout());
-        model = new DefaultTableModel(new String[]{"ID", "Username", "Name", "Shift", "Phone", "Active"}, 0);
-        add(new JScrollPane(new JTable(model)), BorderLayout.CENTER);
-        
+
+        // Initialize table
+        model = new DefaultTableModel(new String[]{"ID", "Username", "Name", "Shift", "Phone", "Active"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        table = new JTable(model);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // Initialize buttons in a panel
+        JPanel buttonPanel = new JPanel();
         JButton addBtn = new JButton("Add Worker");
-        addBtn.addActionListener(e -> {
-//             JOptionPane.showMessageDialog(this, "Add logic goes here"); 
-             showAddWorkerDialog();
-        });
-        add(addBtn, BorderLayout.SOUTH);
+        JButton deleteBtn = new JButton("Delete Worker");
+
+        addBtn.addActionListener(e -> showAddWorkerDialog());
+        deleteBtn.addActionListener(e -> deleteWorker());
+
+        buttonPanel.add(addBtn);
+        buttonPanel.add(deleteBtn);
+        add(buttonPanel, BorderLayout.SOUTH);
     }
-    
+
     private void showAddWorkerDialog() {
         Frame parentFrame = (Frame) SwingUtilities.getWindowAncestor(this);
         JDialog dialog = new JDialog(parentFrame, "Add New Worker", true);
@@ -45,7 +60,7 @@ public class WorkerPanel extends JPanel {
         JPasswordField passwordField = new JPasswordField(15);
         JTextField nameField = new JTextField(20);
         JTextField phoneField = new JTextField(15);
-        JComboBox<String> shiftCombo = new JComboBox<>(new String[] { "Morning", "Evening", "Night" });
+        JComboBox<String> shiftCombo = new JComboBox<>(new String[]{"Morning", "Evening", "Night"});
 
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -107,13 +122,36 @@ public class WorkerPanel extends JPanel {
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
-    
+
+    // NEW: Delete Worker Logic
+    private void deleteWorker() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a worker to delete.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this worker?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                Long id = (Long) model.getValueAt(selectedRow, 0);
+                service.deleteWorker(id); // Calls the backend
+                refreshData();
+                JOptionPane.showMessageDialog(this, "Worker deleted successfully!");
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(this, "Error deleting worker (They may be tied to existing invoices/returns): " + ex.getMessage());
+            }
+        }
+    }
+
     public void refreshData() {
         model.setRowCount(0);
         try {
             for (Worker w : service.getAllWorkers()) {
                 model.addRow(new Object[]{w.getId(), w.getUsername(), w.getName(), w.getShift(), w.getPhone(), w.getActive()});
             }
-        } catch (SQLException ex) { ex.printStackTrace(); }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 }
