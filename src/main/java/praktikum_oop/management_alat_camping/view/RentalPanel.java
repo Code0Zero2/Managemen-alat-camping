@@ -17,8 +17,6 @@ import java.awt.*;
 import java.sql.Date;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.HashMap;
-import java.util.Map;
 
 public class RentalPanel extends JPanel {
     private RentalService rentalService;
@@ -75,7 +73,7 @@ public class RentalPanel extends JPanel {
         JScrollPane eqScroll = new JScrollPane(availTable);
         eqScroll.setPreferredSize(new Dimension(600, 120));
         formPanel.add(eqScroll, gbc);
-        // Change to include "Eq ID" at the front
+        
         gbc.gridy = 3; formPanel.add(new JLabel("Rental Items (Cart):"), gbc);
 
         gbc.gridy = 4;
@@ -99,87 +97,130 @@ public class RentalPanel extends JPanel {
 
         add(formPanel, BorderLayout.NORTH);
 
+        // -- Invoice Table Section --
         invoiceTableModel = new DefaultTableModel(new String[]{"ID", "Customer", "Total", "Status", "Returned", "Rent Date"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         invoiceTable = new JTable(invoiceTableModel);
         add(new JScrollPane(invoiceTable), BorderLayout.CENTER);
 
+        // -- NEW: Invoice Status Buttons (Mark Paid / Cancel) --
+        JPanel statusPanel = new JPanel();
+        JButton paidButton = new JButton("Mark Paid");
+        JButton cancelButton = new JButton("Cancel Invoice");
+        statusPanel.add(paidButton);
+        statusPanel.add(cancelButton);
+        add(statusPanel, BorderLayout.SOUTH);
+
+        // ==========================
+        // ACTION LISTENERS
+        // ==========================
+
         addToCartBtn.addActionListener(e -> {
-         int row = availTable.getSelectedRow();
-         if (row == -1) return;
-         try {
-             int qty = Integer.parseInt(quantityField.getText());
-             int days = Integer.parseInt(daysField.getText());
-             if (qty <= 0 || days <= 0) throw new NumberFormatException();
+            int row = availTable.getSelectedRow();
+            if (row == -1) return;
+            try {
+                int qty = Integer.parseInt(quantityField.getText());
+                int days = Integer.parseInt(daysField.getText());
+                if (qty <= 0 || days <= 0) throw new NumberFormatException();
 
-             Long eqId = (Long) availModel.getValueAt(row, 0);
-             String name = (String) availModel.getValueAt(row, 1);
-             int available = (int) availModel.getValueAt(row, 3);
-             Long price = (Long) availModel.getValueAt(row, 4);
+                Long eqId = (Long) availModel.getValueAt(row, 0);
+                String name = (String) availModel.getValueAt(row, 1);
+                int available = (int) availModel.getValueAt(row, 3);
+                Long price = (Long) availModel.getValueAt(row, 4);
 
-             if (qty > available) {
-                 JOptionPane.showMessageDialog(this, "Not enough stock!");
-                 return;
-             }
+                if (qty > available) {
+                    JOptionPane.showMessageDialog(this, "Not enough stock!");
+                    return;
+                }
 
-             long amount = price * qty * days;
-             // Add eqId as the first element. No more cartMap!
-             cartModel.addRow(new Object[]{eqId, name, qty, days, amount});
-             availModel.setValueAt(available - qty, row, 3);
-             quantityField.setText(""); daysField.setText("");
-         } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid numbers!"); }
-     });
+                long amount = price * qty * days;
+                cartModel.addRow(new Object[]{eqId, name, qty, days, amount});
+                availModel.setValueAt(available - qty, row, 3);
+                quantityField.setText(""); daysField.setText("");
+            } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid numbers!"); }
+        });
 
-     removeBtn.addActionListener(e -> {
-         int row = cartTable.getSelectedRow();
-         if (row != -1) {
-             // Read directly from the cart table
-             String name = (String) cartModel.getValueAt(row, 1);
-             int qty = (int) cartModel.getValueAt(row, 2);
+        removeBtn.addActionListener(e -> {
+            int row = cartTable.getSelectedRow();
+            if (row != -1) {
+                String name = (String) cartModel.getValueAt(row, 1);
+                int qty = (int) cartModel.getValueAt(row, 2);
 
-             for (int i = 0; i < availModel.getRowCount(); i++) {
-                 if (availModel.getValueAt(i, 1).equals(name)) {
-                     availModel.setValueAt((int)availModel.getValueAt(i, 3) + qty, i, 3);
-                     break;
-                 }
-             }
-             cartModel.removeRow(row);
-         }
-     });
+                for (int i = 0; i < availModel.getRowCount(); i++) {
+                    if (availModel.getValueAt(i, 1).equals(name)) {
+                        availModel.setValueAt((int)availModel.getValueAt(i, 3) + qty, i, 3);
+                        break;
+                    }
+                }
+                cartModel.removeRow(row);
+            }
+        });
 
-     processBtn.addActionListener(e -> {
-         if (selectedCustomerId == null || cartModel.getRowCount() == 0) {
-             JOptionPane.showMessageDialog(this, "Please select a customer and add items!");
-             return;
-         }
-         try {
-             Invoice invoice = new Invoice();
-             invoice.setUserId(selectedCustomerId);
-             invoice.setWorkerId(currentWorkerId);
-             invoice.setRentDate(Date.valueOf(LocalDate.now()));
-             invoice.setExpectedReturnDate(Date.valueOf(LocalDate.now().plusDays(7)));
+        processBtn.addActionListener(e -> {
+            if (selectedCustomerId == null || cartModel.getRowCount() == 0) {
+                JOptionPane.showMessageDialog(this, "Please select a customer and add items!");
+                return;
+            }
+            try {
+                Invoice invoice = new Invoice();
+                invoice.setUserId(selectedCustomerId);
+                invoice.setWorkerId(currentWorkerId);
+                invoice.setRentDate(Date.valueOf(LocalDate.now()));
+                invoice.setExpectedReturnDate(Date.valueOf(LocalDate.now().plusDays(7)));
 
-             long totalAmount = 0;
-             for (int i = 0; i < cartModel.getRowCount(); i++) {
-                 InvoiceDetail detail = new InvoiceDetail();
-                 // Read the data directly from the table columns!
-                 detail.setEquipmentId((Long) cartModel.getValueAt(i, 0)); 
-                 detail.setQuantity((int) cartModel.getValueAt(i, 2));
-                 detail.setTimePeriodInDay((int) cartModel.getValueAt(i, 3));
-                 detail.setAmount((Long) cartModel.getValueAt(i, 4));
-                 invoice.getDetails().add(detail);
-                 totalAmount += (Long) cartModel.getValueAt(i, 4);
-             }
-             invoice.setTotalAmount(totalAmount);
-             rentalService.createRental(invoice);
-             JOptionPane.showMessageDialog(this, "Rental Processed!");
+                long totalAmount = 0;
+                for (int i = 0; i < cartModel.getRowCount(); i++) {
+                    InvoiceDetail detail = new InvoiceDetail();
+                    detail.setEquipmentId((Long) cartModel.getValueAt(i, 0)); 
+                    detail.setQuantity((int) cartModel.getValueAt(i, 2));
+                    detail.setTimePeriodInDay((int) cartModel.getValueAt(i, 3));
+                    detail.setAmount((Long) cartModel.getValueAt(i, 4));
+                    invoice.getDetails().add(detail);
+                    totalAmount += (Long) cartModel.getValueAt(i, 4);
+                }
+                invoice.setTotalAmount(totalAmount);
+                rentalService.createRental(invoice);
+                JOptionPane.showMessageDialog(this, "Rental Processed!");
 
-             cartModel.setRowCount(0);
-             customerField.setText(""); selectedCustomerId = null;
-             refreshData(); 
-         } catch (SQLException ex) { JOptionPane.showMessageDialog(this, "DB Error: " + ex.getMessage()); }
-     });
+                cartModel.setRowCount(0);
+                customerField.setText(""); selectedCustomerId = null;
+                refreshData(); 
+            } catch (SQLException ex) { JOptionPane.showMessageDialog(this, "DB Error: " + ex.getMessage()); }
+        });
+
+        // -- NEW: Action Listeners for Payment Status --
+        paidButton.addActionListener(e -> {
+            int row = invoiceTable.getSelectedRow();
+            if (row >= 0) {
+                Long invoiceId = (Long) invoiceTableModel.getValueAt(row, 0);
+                try {
+                    rentalService.updatePaymentStatus(invoiceId, "PAID");
+                    refreshData();
+                    JOptionPane.showMessageDialog(this, "Status updated to PAID");
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select an invoice first.");
+            }
+        });
+
+        cancelButton.addActionListener(e -> {
+            int row = invoiceTable.getSelectedRow();
+            if (row >= 0) {
+                Long invoiceId = (Long) invoiceTableModel.getValueAt(row, 0);
+                try {
+                    rentalService.updatePaymentStatus(invoiceId, "CANCELLED");
+                    refreshData();
+                    JOptionPane.showMessageDialog(this, "Status updated to CANCELLED");
+                } catch (SQLException ex) {
+                    JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Please select an invoice first.");
+            }
+        });
     }
 
     public void refreshData() {
